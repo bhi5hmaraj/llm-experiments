@@ -6,6 +6,8 @@ import os
 from rlm_utils.env import apply_proxy_env, effective_model
 from rlm_utils.pathing import bootstrap_paths
 from rlm_utils.rlm_adapter import monkey_patch_litellm, build_rlm
+from rlm_utils.event_log import get_logger, reset_logger
+from rlm_utils.summary import print_summary
 from rlm_utils.sampling import small_sample_from_dir, small_sample_from_file
 
 
@@ -25,6 +27,7 @@ def main() -> None:
     ap.add_argument("--max-iters", type=int, default=6)
     ap.add_argument("--max-depth", type=int, default=1, help="recursive depth for sub-LLM calls")
     ap.add_argument("--all", action="store_true", help="include all file types (not only texty)")
+    ap.add_argument("--log", action="store_true", help="print a concise per-iteration summary at the end")
     ap.add_argument("--api-base", default=None, help="LiteLLM proxy base URL")
     args = ap.parse_args()
 
@@ -42,8 +45,13 @@ def main() -> None:
     rlm = build_rlm(model, max_iterations=args.max_iters, enable_logging=True, max_depth=args.max_depth)
 
     print("Running RLM_REPL on a tiny sampled context...\n")
+    reset_logger()
     result = rlm.completion(context=context, query=args.query)
     print("\n=== FINAL ANSWER ===\n" + str(result))
+    if args.log:
+        print("\n=== RUN SUMMARY ===")
+        events = get_logger().dump()
+        print_summary(events)
 
 
 if __name__ == "__main__":

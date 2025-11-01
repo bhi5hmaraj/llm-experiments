@@ -124,10 +124,21 @@ class RLM_REPL(RLM):
                 prompt_preview=(prompt.get("content", "")[:120] if isinstance(prompt, dict) else str(prompt)[:120]),
             )
             response = self.llm.completion(self.messages + [prompt])
-            
+
             # Check for code blocks
             code_blocks = utils.find_code_blocks(response)
             self.logger.log_model_response(response, has_tool_calls=code_blocks is not None)
+            # log model response summary
+            try:
+                logger.add(
+                    "root_llm_response",
+                    iteration=iteration,
+                    has_code=bool(code_blocks),
+                    response_len=len(response) if isinstance(response, str) else 0,
+                    response_preview=(response[:160] if isinstance(response, str) else ""),
+                )
+            except Exception:
+                pass
             
             # Process code execution or add assistant message
             if code_blocks is not None:
@@ -148,6 +159,15 @@ class RLM_REPL(RLM):
             # In practice, you may need some guardrails here.
             if final_answer:
                 self.logger.log_final_response(final_answer)
+                try:
+                    logger.add(
+                        "final_answer",
+                        iteration=iteration,
+                        preview=str(final_answer)[:160],
+                        length=len(str(final_answer)),
+                    )
+                except Exception:
+                    pass
                 return final_answer
 
             

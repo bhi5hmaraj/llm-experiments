@@ -9,6 +9,7 @@ from rlm_utils.rlm_adapter import monkey_patch_litellm, build_rlm
 from rlm_utils.sampling import small_sample_from_dir, small_sample_from_file
 from rlm_utils.sequence import export_sequence_mermaid
 from rlm_utils.event_log import get_logger, reset_logger
+from rlm_utils.summary import print_summary
 
 
 def main() -> None:
@@ -23,6 +24,7 @@ def main() -> None:
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--api-base", default=None)
     ap.add_argument("--mermaid", default="docs/graphs/sequence.mmd")
+    ap.add_argument("--log", action="store_true", help="print a concise per-iteration summary")
     args = ap.parse_args()
 
     # Build context
@@ -44,6 +46,9 @@ def main() -> None:
     export_sequence_mermaid(events, args.mermaid)
 
     print("\n=== FINAL ANSWER (truncated) ===\n", str(result)[:500])
+    if args.log:
+        print("\n=== RUN SUMMARY ===")
+        print_summary(events)
     print(f"\nSequence diagram written to: {args.mermaid}")
 
 
