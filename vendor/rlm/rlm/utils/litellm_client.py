@@ -102,9 +102,11 @@ class LiteLLMClient:
 
         # Try attribute access first; fallback to dict style
         try:
-            return resp.choices[0].message.content  # type: ignore[attr-defined]
+            content = getattr(resp.choices[0].message, "content", None)  # type: ignore[attr-defined]
+            return content or ""
         except Exception:
             try:
-                return resp["choices"][0]["message"]["content"]  # type: ignore[index]
+                content = resp["choices"][0]["message"].get("content")  # type: ignore[index]
+                return content or ""
             except Exception as e:
                 raise RuntimeError(f"Unexpected LiteLLM response shape: {type(resp)}") from e
