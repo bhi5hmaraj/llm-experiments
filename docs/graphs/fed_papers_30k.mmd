@@ -1,9 +1,3 @@
 graph TD
-  "rlm_repl.completion" -->|4x / 4937ms| "litellm_client.completion"
-  "utils.execute_code" -->|3x / 4044ms| "repl.code_execution"
-  "utils.process_code_execution" -->|3x / 4044ms| "utils.execute_code"
-  "rlm_repl.completion" -->|4x / 4044ms| "utils.process_code_execution"
-  "repl.completion" -->|2x / 4041ms| "litellm_client.completion"
-  "repl.llm_query_text" -->|2x / 4041ms| "repl.completion"
-  "repl.code_execution" -->|2x / 4041ms| "repl.llm_query_text"
-  "trace._run" -->|1x / 8983ms| "rlm_repl.completion"
+  n0[rlm_repl.completion] -->|2x / 5700ms| n1[litellm_client.completion]
+  n2[trace._run] -->|1x / 5703ms| n0[rlm_repl.completion]

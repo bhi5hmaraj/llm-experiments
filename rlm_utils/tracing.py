@@ -186,21 +186,54 @@ def render_cli_tree(roots: List[CallRecord], max_children: int = 8) -> None:
     console.print(root_tree)
 
 
-def export_mermaid(edges: Dict[Tuple[str, str], Tuple[int, float]], outfile: str, *, min_ms: float = 1.0, exclude_patterns: Optional[str] = None) -> None:
+def export_mermaid(
+    edges: Dict[Tuple[str, str], Tuple[int, float]],
+    outfile: str,
+    *,
+    min_ms: float = 1.0,
+    exclude_patterns: Optional[str] = None,
+    label_max: int = 40,
+) -> None:
+    """Export a Mermaid call graph with safe node IDs + readable labels.
+
+    - Uses stable node IDs (n0, n1, ...) and bracket labels [module.func]
+    - Filters short/irrelevant edges via min_ms and exclude regex
+    """
+    import re
+
     os.makedirs(os.path.dirname(outfile), exist_ok=True)
+
     def short(name: str) -> str:
-        return name.split(".")[-2] + "." + name.split(".")[-1] if "." in name else name
+        # module.func → keep the last two segments when available
+        parts = name.split(".")
+        if len(parts) >= 2:
+            lbl = parts[-2] + "." + parts[-1]
+        else:
+            lbl = name
+        # trim
+        if len(lbl) > label_max:
+            lbl = lbl[:label_max - 1] + "…"
+        # escape bracket terminators/quotes minimally
+        return lbl.replace("\n", " ").replace("]", ")").replace("\"", "'")
+
+    # Build node id map for stable identifiers
+    node_id: Dict[str, str] = {}
+    def nid(name: str) -> str:
+        if name not in node_id:
+            node_id[name] = f"n{len(node_id)}"
+        return node_id[name]
+
     with open(outfile, "w") as f:
         f.write("graph TD\n")
         for (caller, callee), (count, total) in edges.items():
-            if exclude_patterns:
-                import re
-                if re.search(exclude_patterns, caller) or re.search(exclude_patterns, callee):
-                    continue
+            if exclude_patterns and (re.search(exclude_patterns, caller) or re.search(exclude_patterns, callee)):
+                continue
             if (total * 1000.0) < min_ms:
                 continue
-            label = f"{count}x / {total*1000:.0f}ms"
-            f.write(f"  \"{short(caller)}\" -->|{label}| \"{short(callee)}\"\n")
+            edge_label = f"{count}x / {total*1000:.0f}ms"
+            f.write(
+                f"  {nid(caller)}[{short(caller)}] -->|{edge_label}| {nid(callee)}[{short(callee)}]\n"
+            )
 
 
 def render_top_edges(edges: Dict[Tuple[str, str], Tuple[int, float]], *, top_n: int = 10, min_ms: float = 1.0, exclude_patterns: Optional[str] = None) -> None:
