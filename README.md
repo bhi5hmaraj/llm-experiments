@@ -101,3 +101,10 @@ Code reuse across scripts
   - `sampling.py` — single-file/dir sampling
   - `rlm_adapter.py` — monkey‑patch LiteLLM + build `RLM_REPL`
   - `tracing.py` — run with tracer, render tree, export Mermaid
+
+Examples
+- Federalist Papers (30 KB slice)
+  - Command used: `rlm-run --file data/fed_papers.txt --bytes 30000 --max-iters 6`
+  - Output transcript: `docs/runs/fed_papers_30k_output.txt`
+  - Call graph (Mermaid): `docs/graphs/fed_papers_30k.mmd`
+  - Render graph (optional): `mmdc -i docs/graphs/fed_papers_30k.mmd -o docs/graphs/fed_papers_30k.svg`
