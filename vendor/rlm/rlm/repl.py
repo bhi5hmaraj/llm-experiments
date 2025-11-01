@@ -172,6 +172,19 @@ class REPLEnv:
         
         # Add (R)LM query function to globals
         self.globals['llm_query'] = llm_query
+
+        # Safer helper for passing large text without brittle f-strings
+        def llm_query_text(text: str, instruction: str = "") -> str:
+            try:
+                if instruction:
+                    content = f"{instruction}\n\n<CONTEXT>\n{text}\n</CONTEXT>"
+                else:
+                    content = text
+                return self.sub_rlm.completion([{"role": "user", "content": content}])
+            except Exception as e:
+                return f"Error making LLM query: {str(e)}"
+
+        self.globals['llm_query_text'] = llm_query_text
         
         # Add FINAL_VAR function to globals
         def final_var(variable_name: str) -> str:
