@@ -125,3 +125,51 @@ Examples
   - Output transcript: `docs/runs/fed_papers_30k_output.txt`
   - Call graph (Mermaid): `docs/graphs/fed_papers_30k.mmd`
   - Render graph (optional): `mmdc -i docs/graphs/fed_papers_30k.mmd -o docs/graphs/fed_papers_30k.svg`
+
+Concrete example (Mermaid) — Iterations vs sub‑calls
+The diagram below shows a simplified, concrete run where the root agent extracts 5 salient topics from a 30KB slice of the Federalist Papers using two iterations. In each iteration the REPL code may issue one or more sub‑LLM calls (here we use `llm_query_text`).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Root as RootLM
+  participant REPL as REPL (persistent state)
+  participant Sub as Sub‑LLM
+
+  %% Iteration 1: inspect + first chunk
+  Note over Root,REPL: Iteration 1
+  Root->>REPL: Decide next action
+  REPL-->>Root: Plan: inspect context, analyze first 15KB
+  Root->>REPL: Execute code (print preview, prepare chunk_1)
+  REPL->>Sub: llm_query_text(chunk_1, "extract 3 themes + quotes")
+  Sub-->>REPL: themes_1
+  REPL-->>Root: stdout + vars {themes_1}
+
+  %% Iteration 2: second chunk + aggregation
+  Note over Root,REPL: Iteration 2
+  Root->>REPL: Decide next action
+  REPL-->>Root: Plan: analyze next 15KB, then dedupe to 5 topics
+  Root->>REPL: Execute code (prepare chunk_2)
+  REPL->>Sub: llm_query_text(chunk_2, "extract 3 themes + quotes")
+  Sub-->>REPL: themes_2
+  Root->>REPL: Execute code (aggregate themes_1 + themes_2)
+  REPL->>Sub: llm_query_text(aggregated, "dedupe to 5 salient topics")
+  Sub-->>REPL: final_topics
+  REPL-->>Root: FINAL_VAR(final_topics)
+```
+
+Depth/recursion (Mermaid) — optional
+If you run with `--max-depth 2`, a sub‑call can be a child RLM that itself iterates. The structure looks like this:
+
+```mermaid
+flowchart TD
+  A[Root RLM (depth 0)] -->|sub‑call(s)| B[Child RLM (depth 1)]
+  B -->|sub‑call(s)| C[Grandchild RLM (depth 2)]
+  C --> D[[Stop / FINAL]]
+  %% In practice, keep depth small and iterations modest.
+```
+
+Reproduce the example locally
+- Non‑trace: `rlm-run --file data/fed_papers.txt --bytes 30000 --max-iters 2`
+- Sequence (actual run, concise): `rlm-seq --file data/fed_papers.txt --bytes 30000 --max-iters 2 --mermaid docs/graphs/sequence_example.mmd`
+- Render: `mmdc -i docs/graphs/sequence_example.mmd -o docs/graphs/sequence_example.svg`
