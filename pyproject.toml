@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recursive-llm-experiments"
+version = "0.1.0"
+description = "RLM experiments: vendored RLM + LiteLLM adapter, runners, and tracing"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "openai",
+  "litellm",
+  "rich",
+  "python-dotenv",
+]
+
+[project.scripts]
+rlm-run = "rlm_cli.run:main"
+rlm-trace = "rlm_cli.trace:main"
+
+[tool.setuptools]
+packages = ["rlm_utils", "rlm_cli"]
+
