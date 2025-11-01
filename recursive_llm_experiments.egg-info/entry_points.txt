@@ -1,3 +1,4 @@
 [console_scripts]
 rlm-run = rlm_cli.run:main
+rlm-seq = rlm_cli.seq:main
 rlm-trace = rlm_cli.trace:main

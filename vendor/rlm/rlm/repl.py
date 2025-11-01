@@ -7,7 +7,7 @@ import os
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Callable
 
 from rlm import RLM
 
@@ -75,6 +75,7 @@ class REPLEnv:
         context_json: Optional[dict | list] = None,
         context_str: Optional[str] = None,
         setup_code: str = None,
+        sub_rlm_factory: Optional[Callable[[], RLM]] = None,
     ):
         # Store the original working directory
         self.original_cwd = os.getcwd()
@@ -83,8 +84,12 @@ class REPLEnv:
         self.temp_dir = tempfile.mkdtemp(prefix="repl_env_")
 
 
-        # Initialize minimal RLM / LM client. Change this to support more depths.
-        self.sub_rlm: RLM = Sub_RLM(model=recursive_model)
+        # Initialize minimal RLM / LM client. If a factory is provided,
+        # use it to support deeper recursion; otherwise default Sub_RLM.
+        if sub_rlm_factory is not None:
+            self.sub_rlm: RLM = sub_rlm_factory()
+        else:
+            self.sub_rlm: RLM = Sub_RLM(model=recursive_model)
         
         # Create safe globals with only string-safe built-ins
         self.globals = {

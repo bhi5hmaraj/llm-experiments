@@ -34,6 +34,7 @@ class RLM_REPL(RLM):
                  recursive_model: str = "gpt-5",
                  max_iterations: int = 20,
                  depth: int = 0,
+                 max_depth: int = 1,
                  enable_logging: bool = False,
                  ):
         self.api_key = api_key
@@ -43,7 +44,8 @@ class RLM_REPL(RLM):
         
         # Track recursive call depth to prevent infinite loops
         self.repl_env = None
-        self.depth = depth # Unused in this version.
+        self.depth = depth
+        self.max_depth = max_depth
         self._max_iterations = max_iterations
         
         # Initialize colorful logger
@@ -74,10 +76,27 @@ class RLM_REPL(RLM):
         # Initialize REPL environment with context data
         context_data, context_str = utils.convert_context_for_repl(context)
         
+        # Build a sub-RLM factory when deeper recursion is allowed
+        sub_factory = None
+        if self.depth + 1 < self.max_depth:
+            # Defer import string to avoid circulars in repl.py
+            def _factory():
+                return RLM_REPL(
+                    api_key=self.api_key,
+                    model=self.recursive_model,
+                    recursive_model=self.recursive_model,
+                    max_iterations=self._max_iterations,
+                    depth=self.depth + 1,
+                    max_depth=self.max_depth,
+                    enable_logging=False,
+                )
+            sub_factory = _factory
+
         self.repl_env = REPLEnv(
-            context_json=context_data, 
-            context_str=context_str, 
+            context_json=context_data,
+            context_str=context_str,
             recursive_model=self.recursive_model,
+            sub_rlm_factory=sub_factory,
         )
         
         return self.messages

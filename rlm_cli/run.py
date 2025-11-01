@@ -23,6 +23,7 @@ def main() -> None:
         help="user query",
     )
     ap.add_argument("--max-iters", type=int, default=6)
+    ap.add_argument("--max-depth", type=int, default=1, help="recursive depth for sub-LLM calls")
     ap.add_argument("--all", action="store_true", help="include all file types (not only texty)")
     ap.add_argument("--api-base", default=None, help="LiteLLM proxy base URL")
     args = ap.parse_args()
@@ -38,7 +39,7 @@ def main() -> None:
     monkey_patch_litellm()
     apply_proxy_env(args.api_base)
     model = effective_model("gemini-2.5-flash-lite")
-    rlm = build_rlm(model, max_iterations=args.max_iters, enable_logging=True)
+    rlm = build_rlm(model, max_iterations=args.max_iters, enable_logging=True, max_depth=args.max_depth)
 
     print("Running RLM_REPL on a tiny sampled context...\n")
     result = rlm.completion(context=context, query=args.query)
@@ -47,4 +48,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

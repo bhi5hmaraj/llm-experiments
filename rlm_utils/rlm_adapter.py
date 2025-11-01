@@ -18,7 +18,7 @@ def monkey_patch_litellm() -> None:
     rlm_repl_mod.OpenAIClient = LiteLLMClient  # type: ignore[attr-defined]
 
 
-def build_rlm(model: str, max_iterations: int = 6, enable_logging: bool = True) -> Any:
+def build_rlm(model: str, max_iterations: int = 6, enable_logging: bool = True, *, max_depth: int = 1) -> Any:
     """Return an RLM_REPL instance with our chosen model and settings."""
     bootstrap_paths()
     from rlm.rlm_repl import RLM_REPL  # type: ignore
@@ -28,5 +28,6 @@ def build_rlm(model: str, max_iterations: int = 6, enable_logging: bool = True) 
         recursive_model=model,
         enable_logging=enable_logging,
         max_iterations=max_iterations,
+        depth=0,
+        max_depth=max_depth,
     )
-

@@ -18,6 +18,7 @@ def main() -> None:
     ap.add_argument("--bytes", type=int, default=24_000)
     ap.add_argument("--query", default="List 5 salient topics and cite the source file.")
     ap.add_argument("--max-iters", type=int, default=4)
+    ap.add_argument("--max-depth", type=int, default=1, help="recursive depth for sub-LLM calls")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--api-base", default=None)
     ap.add_argument("--mermaid", default="artifacts/callgraph.mmd")
@@ -42,7 +43,7 @@ def main() -> None:
     monkey_patch_litellm()
     apply_proxy_env(args.api_base)
     model = effective_model("gemini-2.5-flash-lite")
-    rlm = build_rlm(model, max_iterations=args.max_iters, enable_logging=False)
+    rlm = build_rlm(model, max_iterations=args.max_iters, enable_logging=False, max_depth=args.max_depth)
 
     # Trace the completion call
     def _run():

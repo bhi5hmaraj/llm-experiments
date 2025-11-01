@@ -1,0 +1,6 @@
+# Core runtime dependencies
+openai>=2.6.1
+litellm>=1.79.0
+rich>=14.0.0
+python-dotenv>=1.0.0
+
