@@ -45,6 +45,18 @@ Limits and safety
 - This minimal REPL uses `exec` with a curated builtins allowlist but still runs arbitrary Python. Treat it as untrusted: sandbox it, avoid secrets, and prefer containers when possible.
 - Depth > 1 recursion is possible but requires careful REPL isolation to avoid state leakage across nested calls.
 
+Why the reference repo shipped depth=1 by default
+- State isolation: every nested RLM needs its own persistent REPL (globals/locals/temp dir). Without careful isolation, child state can leak into the parent.
+- Contract between levels: the parent must decide exactly what slice/summary to pass to a child and how to consume the child’s result. This IO contract adds engineering overhead.
+- Termination semantics: you need clear rules for which FINAL/FINAL_VAR “wins”, and how child final answers propagate to the parent.
+- Cost/latency control: recursion multiplies calls. You need budgets (steps/tokens/time) and circuit breakers to prevent thrashing.
+- Observability: logs and traces must preserve nesting; otherwise debugging becomes painful. (See `rlm-seq` for a concise sequence view.)
+
+Complexity of deeper recursion (big‑O intuition)
+- Let `d` be the recursion depth and `b` be the branching factor (max sub‑calls a node can spawn at the next level). In the worst case, total sub‑calls across all levels is geometric: `1 + b + b^2 + … + b^d = O(b^d)`.
+- If you equate `b` with “max sub‑calls per root iteration”, and you allow up to `T` root iterations at every level, the crude upper bound becomes `O((b*T)^d)` LM calls. In practice you set small `d`, cap `T`, and throttle sub‑calls to keep costs bounded.
+- So the common shorthand “O(n^d)” is correct if `n` stands for the branching factor (max sub‑calls per node), not the number of iterations alone.
+
 Run tests
 - `python -m unittest discover -s tests -p 'test_*.py' -v`
 
@@ -80,6 +92,11 @@ Run a tiny example with LiteLLM (recommended)
 - Run the tiny sampler over your `data/` folder:
   - `python scripts/run_small_example.py --data data --k 3 --bytes 24000 --max-iters 6 \
      --query "From these snippets, list 5 salient topics and cite the source file."`
+
+Depth and recursion settings
+- All CLIs accept `--max-depth` to enable nested sub‑RLM calls (default 1). Example:
+  - `rlm-run --file data/fed_papers.txt --bytes 30000 --max-iters 4 --max-depth 2`
+- Start with small values (`--max-depth 2`, `--max-iters 3–4`) and increase cautiously; deeper recursion can explode costs roughly exponentially.
 
 What the tiny example does
 - Randomly samples `k` files from `data/` and reads only the first `--bytes` bytes of each (keeps things small).
