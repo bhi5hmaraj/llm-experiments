@@ -5,6 +5,15 @@ Simple Recursive Language Model (RLM) with REPL environment.
 from typing import Dict, List, Optional, Any 
 
 from rlm import RLM
+try:
+    # Optional event logging (provided by this repo)
+    from rlm_utils.event_log import get_logger  # type: ignore
+except Exception:  # pragma: no cover
+    def get_logger():
+        class _Nop:
+            def add(self, *a, **k):
+                pass
+        return _Nop()
 from rlm.repl import REPLEnv
 from rlm.utils.llm import OpenAIClient
 from rlm.utils.prompts import DEFAULT_QUERY, next_action_prompt, build_system_prompt
@@ -82,9 +91,20 @@ class RLM_REPL(RLM):
         
         # Main loop runs for fixed # of root LM iterations
         for iteration in range(self._max_iterations):
+            # expose iteration to REPL env for downstream logging
+            if self.repl_env is not None:
+                setattr(self.repl_env, "_iteration", iteration)
             
             # Query root LM to interact with REPL environment
-            response = self.llm.completion(self.messages + [next_action_prompt(query, iteration)])
+            logger = get_logger()
+            prompt = next_action_prompt(query, iteration)
+            # log root call (noisy messages omitted; show iteration + prompt size)
+            logger.add(
+                "root_llm_call",
+                iteration=iteration,
+                prompt_preview=(prompt.get("content", "")[:120] if isinstance(prompt, dict) else str(prompt)[:120]),
+            )
+            response = self.llm.completion(self.messages + [prompt])
             
             # Check for code blocks
             code_blocks = utils.find_code_blocks(response)

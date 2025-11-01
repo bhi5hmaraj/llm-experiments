@@ -18,7 +18,7 @@ dependencies = [
 [project.scripts]
 rlm-run = "rlm_cli.run:main"
 rlm-trace = "rlm_cli.trace:main"
+rlm-seq = "rlm_cli.seq:main"
 
 [tool.setuptools]
 packages = ["rlm_utils", "rlm_cli"]
-

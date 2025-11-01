@@ -1,0 +1,24 @@
+sequenceDiagram
+  participant RootLM
+  participant REPL
+  participant SubLM
+  rect rgba(200,200,200,0.15)
+  note right of RootLM: Iteration 0
+  RootLM->>REPL: decide next action (You have not interacted with the REPL environment or seen your context yet. Your…)
+  RootLM->>REPL: exec code (2 lines)
+  note over REPL: overview = llm_query_text(context["content"], "Provide a brief overview of the c…
+  end
+  rect rgba(200,200,200,0.15)
+  note right of RootLM: Iteration 1
+  RootLM->>REPL: decide next action (The history before is your previous interactions with the REPL environment. Thin…)
+  RootLM->>REPL: exec code (1 lines)
+  note over REPL: print(type(context))
+  RootLM->>REPL: exec code (1 lines)
+  note over REPL: print(context.keys())
+  RootLM->>REPL: exec code (1 lines)
+  note over REPL: print(context["content"][:500])
+  end
+  rect rgba(200,200,200,0.15)
+  note right of RootLM: Iteration 2
+  RootLM->>REPL: decide next action (The history before is your previous interactions with the REPL environment. Thin…)
+  end

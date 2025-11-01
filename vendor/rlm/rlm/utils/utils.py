@@ -4,6 +4,14 @@ Utility functions for the RLM REPL Client.
 
 import re
 from typing import List, Dict, Optional, Tuple, Any
+try:
+    from rlm_utils.event_log import get_logger  # type: ignore
+except Exception:  # pragma: no cover
+    def get_logger():
+        class _Nop:
+            def add(self, *a, **k):
+                pass
+        return _Nop()
 
 def find_code_blocks(text: str | None) -> List[str]:
     """
@@ -129,6 +137,17 @@ def execute_code(repl_env, code: str, repl_env_logger, logger) -> str:
         Formatted execution result
     """
     try:
+        # Log code exec (truncate preview)
+        try:
+            it = getattr(repl_env, "_iteration", None)
+            get_logger().add(
+                "code_exec",
+                iteration=it,
+                lines=len(code.splitlines()) if code else 0,
+                preview=(code[:160] if code else ""),
+            )
+        except Exception:
+            pass
         result = repl_env.code_execution(code)
         
         formatted_result = format_execution_result(

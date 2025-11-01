@@ -168,7 +168,23 @@ class REPLEnv:
         
         def llm_query(prompt: str) -> str:
             """Query the LLM with the given prompt."""
-            return self.sub_rlm.completion(prompt)
+            try:
+                # Structured event logging (optional)
+                try:
+                    from rlm_utils.event_log import get_logger  # type: ignore
+                    it = getattr(self, "_iteration", None)
+                    get_logger().add(
+                        "sub_llm_call",
+                        iteration=it,
+                        mode="prompt",
+                        prompt_preview=str(prompt)[:160],
+                        prompt_len=len(str(prompt)) if prompt is not None else 0,
+                    )
+                except Exception:
+                    pass
+                return self.sub_rlm.completion(prompt)
+            except Exception as e:
+                return f"Error making LLM query: {str(e)}"
         
         # Add (R)LM query function to globals
         self.globals['llm_query'] = llm_query
@@ -180,6 +196,19 @@ class REPLEnv:
                     content = f"{instruction}\n\n<CONTEXT>\n{text}\n</CONTEXT>"
                 else:
                     content = text
+                # Structured event logging (optional)
+                try:
+                    from rlm_utils.event_log import get_logger  # type: ignore
+                    it = getattr(self, "_iteration", None)
+                    get_logger().add(
+                        "sub_llm_call",
+                        iteration=it,
+                        mode="text",
+                        instruction_preview=instruction[:120],
+                        text_len=len(text or ""),
+                    )
+                except Exception:
+                    pass
                 return self.sub_rlm.completion([{"role": "user", "content": content}])
             except Exception as e:
                 return f"Error making LLM query: {str(e)}"
